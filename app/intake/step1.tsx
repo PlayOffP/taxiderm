@@ -70,19 +70,18 @@ export default function IntakeStep1Screen() {
         });
         return;
       } else {
-        // 2) Insert row with explicit user_id (matches RLS)
+        // 2) Insert new customer
         const { data: newCustomer, error: insertError } = await supabase
           .from('customer')
           .insert([{
-            name: customer.name || null,
-            phone: customer.phone || null,
+            name: customer.name,
+            phone: customer.phone,
             email: customer.email || null,
             address_line1: customer.address_line1 || null,
             city: customer.city || null,
-            state: customer.state || null,
+            state: customer.state || 'TX',
             zip: customer.zip || null,
-            sms_opt_in: !!customer.sms_opt_in,
-            user_id: uid,
+            sms_opt_in: customer.sms_opt_in ?? true,
           }])
           .select()
           .single();
