@@ -11,10 +11,10 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { JobRow, CustomerRow, ComplianceDocRow } from '@/types/database';
-import { mapPSR } from '@/lib/psrMapping';
-import { fillPSR } from '@/lib/pdfStamp';
-import { generateWRDPDF } from '@/lib/pdfGenerator';
+import { generatePWD535PDF, generateWRDPDF } from '@/lib/pdfGenerator';
 import { ArrowLeft, Download, Printer, Share } from 'lucide-react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 // Conditionally import WebView only for native platforms
 let WebView: any = null;
@@ -86,42 +86,31 @@ export default function ComplianceDocumentScreen() {
     }
   };
 
-  const onViewPrintPWD535 = async (job: any) => {
+  const savePdfToDatabase = async (jobId: string, docType: string, pdfUrl: string) => {
     try {
-      // 1) Map fields from current job state
-      const fields = mapPSR(job);
-
-      // 2) First run: show guides to calibrate quickly; then set to false
-      const { publicUrl, dataUrl } = await fillPSR(job, fields, { showGuides: true });
-
-      // 3) Show PDF in viewer
-      setDocumentUrl(dataUrl || publicUrl);
-      setPdfUri(dataUrl || publicUrl);
-
-      // 4) (Optional) Save or upsert compliance_doc row here if not already done:
-      // await supabase.from('compliance_doc').upsert({
-      //   job_id: job.id,
-      //   type: 'PWD-535',
-      //   pdf_url: publicUrl,
-      //   version: job.version ?? 1
-      // });
-
-    } catch (e) {
-      console.error('Error generating PSR PDF', e);
+      await supabase
+        .from('compliance_doc')
+        .update({ pdf_url: pdfUrl })
+        .eq('job_id', jobId)
+        .eq('type', docType);
+    } catch (error) {
+      console.error('Error saving PDF URL to database:', error);
     }
   };
 
   const generateAndSavePDF = async (jobData: JobWithCustomer, docData: ComplianceDocRow) => {
     try {
       setGenerating(true);
-      
+
+      let uri: string;
       if (docType === 'PWD-535') {
-        await onViewPrintPWD535(jobData);
+        uri = await generatePWD535PDF(jobData);
       } else {
-        // Keep existing WRD generation for now
-        const pdfUri = await generateWRDPDF(jobData);
-        setPdfUri(pdfUri);
+        uri = await generateWRDPDF(jobData);
       }
+
+      setPdfUri(uri);
+      await savePdfToDatabase(jobData.id, docType, uri);
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -131,20 +120,46 @@ export default function ComplianceDocumentScreen() {
     }
   };
 
-  const handlePrint = () => {
-    Alert.alert(
-      'Print Document',
-      'Print functionality will be implemented with AirPrint integration.',
-      [{ text: 'OK' }]
-    );
+  const handlePrint = async () => {
+    if (!pdfUri) {
+      Alert.alert('Error', 'PDF not generated yet. Please wait for the PDF to load.');
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'web') {
+        window.print();
+      } else {
+        await Print.printAsync({ uri: pdfUri });
+      }
+    } catch (error) {
+      console.error('Error printing:', error);
+      Alert.alert('Error', 'Failed to print document');
+    }
   };
 
-  const handleShare = () => {
-    Alert.alert(
-      'Share Document',
-      'Share functionality will be implemented to allow sharing the PDF.',
-      [{ text: 'OK' }]
-    );
+  const handleShare = async () => {
+    if (!pdfUri) {
+      Alert.alert('Error', 'PDF not generated yet. Please wait for the PDF to load.');
+      return;
+    }
+
+    try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Error', 'Sharing is not available on this device');
+        return;
+      }
+
+      await Sharing.shareAsync(pdfUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: `Share ${getDocumentTitle()}`,
+        UTI: 'com.adobe.pdf',
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+      Alert.alert('Error', 'Failed to share document');
+    }
   };
 
   const openPdfViewer = (pdfUrl: string) => {
