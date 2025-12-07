@@ -177,7 +177,11 @@ export default function JobDetailScreen() {
       </View>
 
       {/* Tab Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {activeTab === 'overview' && (
           <View style={styles.tabContent}>
             {/* Workflow Progress */}
@@ -497,6 +501,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 40,
   },
   tabContent: {
     padding: 20,
