@@ -7,6 +7,7 @@ export default function IntakeLayout() {
       <Stack.Screen name="step2" />
       <Stack.Screen name="step3" />
       <Stack.Screen name="step4" />
+      <Stack.Screen name="success" />
     </Stack>
   );
 }

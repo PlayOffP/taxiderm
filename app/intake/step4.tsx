@@ -134,26 +134,11 @@ export default function IntakeStep4Screen() {
         console.error('Audit log error:', auditError);
       }
 
-      Alert.alert(
-        'Job Created Successfully!',
-        `Invoice #${invoiceNo} has been created. Compliance documents are ready for printing.`,
-        [
-          {
-            text: 'Go to Home',
-            onPress: () => {
-              router.dismissAll();
-              router.replace('/(tabs)/');
-            }
-          },
-          {
-            text: 'Create Another',
-            onPress: () => {
-              router.dismissAll();
-              router.replace('/(tabs)/intake');
-            }
-          }
-        ]
-      );
+      // Navigate to success screen
+      router.replace({
+        pathname: '/intake/success',
+        params: { invoiceNo }
+      });
 
     } catch (error) {
       console.error('Error creating job:', error);
