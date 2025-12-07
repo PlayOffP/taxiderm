@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { getKioskUid } from '@/lib/auth';
 import { CustomerInsert } from '@/types/database';
 import { ArrowLeft, ArrowRight, User, Phone, Mail, MapPin } from 'lucide-react-native';
 
@@ -45,10 +44,7 @@ export default function IntakeStep1Screen() {
 
     try {
       setLoading(true);
-      
-      // 1) Ensure kiosk session + get uid
-      const uid = await getKioskUid();
-      
+
       // Check if customer already exists by phone
       const { data: existingCustomers, error: searchError } = await supabase
         .from('customer')
@@ -95,9 +91,10 @@ export default function IntakeStep1Screen() {
           params: { customerId }
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error handling customer:', error);
-      Alert.alert('Error', 'Failed to process customer information');
+      const errorMessage = error?.message || 'Failed to process customer information';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
