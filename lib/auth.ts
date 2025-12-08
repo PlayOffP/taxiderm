@@ -12,7 +12,8 @@ export async function ensureKioskSession() {
   // Attempt anonymous sign-in
   const { error } = await supabase.auth.signInAnonymously();
   if (error) {
-    console.warn('Anonymous sign-in failed. Continuing without auth. Enable Anonymous provider in Supabase for full functionality.');
+    console.error('Anonymous sign-in failed:', error.message);
+    console.warn('Enable Anonymous provider in Supabase Dashboard: Authentication > Providers > Anonymous');
     // Don't throw - allow app to continue without auth for now
     return;
   }
