@@ -340,9 +340,7 @@ export default function JobDetailScreen() {
               <View style={styles.infoCard}>
                 <Text style={styles.infoLabel}>Species & Sex</Text>
                 <Text style={styles.infoValue}>
-                  {`${job.species.charAt(0).toUpperCase() + job.species.slice(1)} • ${job.sex.charAt(0).toUpperCase() + job.sex.slice(1)}`}
-                  {job.antler_points ? ` • ${job.antler_points} points` : ''}
-                  {job.beard_attached !== null ? ` • Beard ${job.beard_attached ? 'attached' : 'not attached'}` : ''}
+                  {`${job.species.charAt(0).toUpperCase() + job.species.slice(1)} • ${job.sex.charAt(0).toUpperCase() + job.sex.slice(1)}${job.antler_points ? ` • ${job.antler_points} points` : ''}${job.beard_attached !== null ? ` • Beard ${job.beard_attached ? 'attached' : 'not attached'}` : ''}`}
                 </Text>
                 
                 <Text style={styles.infoLabel}>Date Killed</Text>
