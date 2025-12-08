@@ -12,7 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { JobRow, CustomerRow, ComplianceDocRow } from '@/types/database';
 import { fillPSR, fillWRD } from '@/lib/pdfStamp';
-import { mapPSR, mapWRD } from '@/lib/psrMapping';
+import { mapPSRFormFields, mapWRD } from '@/lib/psrMapping';
 import { ArrowLeft, Download, Printer, Share } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -105,8 +105,8 @@ export default function ComplianceDocumentScreen() {
 
       let result: { publicUrl: string; dataUrl: string };
       if (docType === 'PWD-535') {
-        const fields = mapPSR(jobData);
-        result = await fillPSR(jobData, fields);
+        const formData = mapPSRFormFields(jobData);
+        result = await fillPSR(jobData, formData);
       } else {
         const fields = mapWRD(jobData);
         result = await fillWRD(jobData, fields);

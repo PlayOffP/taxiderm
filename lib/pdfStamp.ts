@@ -4,8 +4,9 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { ensureKioskSession } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import type { PsrField } from './psrMapping';
+import type { FormFieldData } from './pdfFill';
 
-export async function fillPSR(job: any, fields: PsrField[], opts?: { showGuides?: boolean }) {
+export async function fillPSR(job: any, formData: FormFieldData) {
   await ensureKioskSession();
 
   const tplBytes = await downloadBytes(BUCKET_TEMPLATES, TEMPLATE_PSR);
@@ -15,35 +16,32 @@ export async function fillPSR(job: any, fields: PsrField[], opts?: { showGuides?
   }
 
   const pdf = await PDFDocument.load(tplBytes);
-  const pages = pdf.getPages();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const form = pdf.getForm();
 
-  for (const f of fields) {
-    const p = pages[f.page ?? 0];
-    p.drawText(f.text ?? '', {
-      x: f.x,
-      y: f.y,
-      size: f.size ?? 10,
-      font,
-      color: rgb(0, 0, 0),
+  if (formData.textFields) {
+    Object.entries(formData.textFields).forEach(([fieldName, value]) => {
+      try {
+        const field = form.getTextField(fieldName);
+        field.setText(value || '');
+      } catch (e) {
+        console.warn(`Text field not found: ${fieldName}`);
+      }
     });
   }
 
-  if (opts?.showGuides) {
-    const p = pages[0];
-    for (const f of fields) {
-      p.drawRectangle({
-        x: f.x - 2,
-        y: f.y - 2,
-        width: 184,
-        height: 18,
-        borderColor: rgb(1, 0, 0),
-        borderWidth: 0.5,
-        color: undefined,
-      });
-    }
-    p.drawLine({ start: { x: 0, y: 0 }, end: { x: 30, y: 0 }, color: rgb(0, 0.2, 1), thickness: 0.5 });
-    p.drawLine({ start: { x: 0, y: 0 }, end: { x: 0, y: 30 }, color: rgb(0, 0.2, 1), thickness: 0.5 });
+  if (formData.checkboxes) {
+    Object.entries(formData.checkboxes).forEach(([fieldName, checked]) => {
+      try {
+        const field = form.getCheckBox(fieldName);
+        if (checked) {
+          field.check();
+        } else {
+          field.uncheck();
+        }
+      } catch (e) {
+        console.warn(`Checkbox not found: ${fieldName}`);
+      }
+    });
   }
 
   const bytes = await pdf.save();
