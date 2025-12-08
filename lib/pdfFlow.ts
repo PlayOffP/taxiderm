@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { BUCKET_TEMPLATES, BUCKET_DOCUMENTS, TEMPLATE_PSR, TEMPLATE_WRD } from '../constants/storage';
-import { fillPdfFromUrl } from './pdfFill';
-import { mapPSR, mapWRD } from './pdfMapping';
+import { fillPdfFromUrl, fillPdfFormFields } from './pdfFill';
+import { mapPSR, mapWRD, mapPSRFormFields } from './pdfMapping';
 
 function getPublicUrl(bucket: string, path: string): string {
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
@@ -10,8 +10,8 @@ function getPublicUrl(bucket: string, path: string): string {
 
 export async function generatePSR(job: any) {
   const tplUrl = getPublicUrl(BUCKET_TEMPLATES, TEMPLATE_PSR);
-  const fields = mapPSR(job);
-  const { bytes, dataUrl } = await fillPdfFromUrl(tplUrl, fields);
+  const formData = mapPSRFormFields(job);
+  const { bytes, dataUrl } = await fillPdfFormFields(tplUrl, formData);
 
   const path = `documents/${job.id}/PWD-535_v${job.version || 1}.pdf`;
   const { error } = await supabase.storage.from(BUCKET_DOCUMENTS)

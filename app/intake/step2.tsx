@@ -17,6 +17,8 @@ import { ArrowLeft, ArrowRight, Calendar, FileText, MapPin } from 'lucide-react-
 const SPECIES_OPTIONS = [
   { key: 'deer', label: 'Deer' },
   { key: 'turkey', label: 'Turkey' },
+  { key: 'pronghorn', label: 'Pronghorn' },
+  { key: 'pheasant', label: 'Pheasant' },
   { key: 'duck', label: 'Duck' },
   { key: 'quail', label: 'Quail' },
   { key: 'dove', label: 'Dove' },

@@ -1,4 +1,85 @@
+import { FormFieldData } from './pdfFill';
+
 export type PsrField = { text: string; x: number; y: number; size?: number; page?: number };
+
+export function mapPSRFormFields(job: any): FormFieldData {
+  const textFields: Record<string, string> = {};
+  const checkboxes: Record<string, boolean> = {};
+
+  textFields['hunter_name'] = job?.customer?.name ?? '';
+  textFields['kill_date'] = job?.date_killed ?? '';
+  textFields['invoice_number'] = job?.invoice_no ?? '';
+  textFields['Date'] = new Date().toISOString().split('T')[0];
+
+  const species = (job?.species ?? '').toLowerCase();
+  const sex = (job?.sex ?? '').toLowerCase();
+
+  if (species === 'deer') {
+    if (sex === 'male') {
+      checkboxes['antlered'] = true;
+      checkboxes['antlerless'] = false;
+      textFields['deer_antlered_points'] = String(job?.antler_points ?? '');
+    } else {
+      checkboxes['antlered'] = false;
+      checkboxes['antlerless'] = true;
+    }
+  } else {
+    checkboxes['antlered'] = false;
+    checkboxes['antlerless'] = false;
+  }
+
+  if (species === 'turkey') {
+    if (sex === 'male') {
+      checkboxes['turkey_gobbler'] = true;
+      checkboxes['turkey_hen'] = false;
+      if (job?.beard_attached === true) {
+        checkboxes['turkey_beard_attached_yes'] = true;
+        checkboxes['turkey_beard_attached_no'] = false;
+      } else {
+        checkboxes['turkey_beard_attached_yes'] = false;
+        checkboxes['turkey_beard_attached_no'] = true;
+      }
+    } else {
+      checkboxes['turkey_gobbler'] = false;
+      checkboxes['turkey_hen'] = true;
+      checkboxes['turkey_beard_attached_yes'] = false;
+      checkboxes['turkey_beard_attached_no'] = false;
+    }
+  } else {
+    checkboxes['turkey_gobbler'] = false;
+    checkboxes['turkey_hen'] = false;
+    checkboxes['turkey_beard_attached_yes'] = false;
+    checkboxes['turkey_beard_attached_no'] = false;
+  }
+
+  if (species === 'pronghorn') {
+    if (sex === 'male') {
+      checkboxes['pronghorn_buck'] = true;
+      checkboxes['pronghorn_doe'] = false;
+    } else {
+      checkboxes['pronghorn_buck'] = false;
+      checkboxes['pronghorn_doe'] = true;
+    }
+  } else {
+    checkboxes['pronghorn_buck'] = false;
+    checkboxes['pronghorn_doe'] = false;
+  }
+
+  if (species === 'pheasant') {
+    if (sex === 'male') {
+      checkboxes['pheasant_cock'] = true;
+      checkboxes['pheasant_hen'] = false;
+    } else {
+      checkboxes['pheasant_cock'] = false;
+      checkboxes['pheasant_hen'] = true;
+    }
+  } else {
+    checkboxes['pheasant_cock'] = false;
+    checkboxes['pheasant_hen'] = false;
+  }
+
+  return { textFields, checkboxes };
+}
 
 export function mapPSR(job: any): PsrField[] {
   const f: PsrField[] = [];
