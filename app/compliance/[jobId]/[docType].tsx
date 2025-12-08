@@ -131,7 +131,13 @@ export default function ComplianceDocumentScreen() {
 
     try {
       if (Platform.OS === 'web') {
-        window.print();
+        // On web, open the PDF in a new window and trigger print
+        const printWindow = window.open(pdfUri, '_blank');
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
       } else {
         await Print.printAsync({ uri: pdfUri });
       }
