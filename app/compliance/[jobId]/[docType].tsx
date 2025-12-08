@@ -11,7 +11,8 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { JobRow, CustomerRow, ComplianceDocRow } from '@/types/database';
-import { generatePWD535PDF, generateWRDPDF } from '@/lib/pdfGenerator';
+import { fillPSR, fillWRD } from '@/lib/pdfStamp';
+import { mapPSR, mapWRD } from '@/lib/psrMapping';
 import { ArrowLeft, Download, Printer, Share } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -102,15 +103,17 @@ export default function ComplianceDocumentScreen() {
     try {
       setGenerating(true);
 
-      let uri: string;
+      let result: { publicUrl: string; dataUrl: string };
       if (docType === 'PWD-535') {
-        uri = await generatePWD535PDF(jobData);
+        const fields = mapPSR(jobData);
+        result = await fillPSR(jobData, fields);
       } else {
-        uri = await generateWRDPDF(jobData);
+        const fields = mapWRD(jobData);
+        result = await fillWRD(jobData, fields);
       }
 
-      setPdfUri(uri);
-      await savePdfToDatabase(jobData.id, docType, uri);
+      setPdfUri(result.dataUrl || result.publicUrl);
+      await savePdfToDatabase(jobData.id, docType, result.publicUrl);
 
     } catch (error) {
       console.error('Error generating PDF:', error);

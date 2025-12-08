@@ -33,7 +33,36 @@ export function mapPSR(job: any): PsrField[] {
   return f;
 }
 
-/** Boxes around mapped fields for one-time calibration */
+export function mapWRD(job: any): PsrField[] {
+  const f: PsrField[] = [];
+
+  // Donor (hunter)
+  f.push({ text: job?.customer?.name ?? '',  x: 120, y: 710, size: 11 });
+  f.push({ text: job?.customer?.phone ?? '', x: 420, y: 710, size: 11 });
+  f.push({ text: job?.customer?.address_line1 ?? '', x: 120, y: 690, size: 11 });
+  f.push({ text: `${job?.customer?.city ?? ''}, ${job?.customer?.state ?? ''} ${job?.customer?.zip ?? ''}`, x: 120, y: 670, size: 11 });
+
+  // Receiver (shop)
+  f.push({ text: job?.business_name ?? 'Tall Pine Taxidermy and Deer Processing', x: 120, y: 630, size: 11 });
+  f.push({ text: job?.business_address ?? '4982 TX-19 S, Sulphur Springs, TX 75482', x: 120, y: 612, size: 11 });
+
+  // Animal details
+  f.push({ text: job?.species ?? '', x: 120, y: 570, size: 11 });
+  f.push({ text: String(job?.quantity ?? 1), x: 420, y: 570, size: 11 });
+  f.push({ text: job?.license_no ?? '', x: 120, y: 550, size: 11 });
+  f.push({ text: job?.date_killed ?? '', x: 420, y: 550, size: 11 });
+
+  // Processing type & instructions
+  f.push({ text: job?.processing_type ?? 'standard', x: 120, y: 510, size: 11 });
+  f.push({ text: job?.instructions ?? '', x: 120, y: 490, size: 11 });
+
+  // Weights
+  if (job?.hang_weight)  f.push({ text: `Hang: ${job.hang_weight} lb`,  x: 120, y: 470, size: 11 });
+  if (job?.yield_weight) f.push({ text: `Yield: ${job.yield_weight} lb`, x: 260, y: 470, size: 11 });
+
+  return f;
+}
+
 export function mapPSRGuides(fields: PsrField[], w = 180, h = 14) {
   return fields.map(f => ({ ...f, w, h }));
 }
