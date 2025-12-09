@@ -19,6 +19,7 @@ export function mapPSRFormFields(job: any): FormFieldData {
   const species = (job?.species ?? '').toLowerCase();
   const sex = (job?.sex ?? '').toLowerCase();
 
+  // All radio buttons are in a single group "Group4"
   if (species === 'deer') {
     if (sex === 'male') {
       radioButtons['Group4'] = 'antlered';
@@ -26,34 +27,25 @@ export function mapPSRFormFields(job: any): FormFieldData {
     } else {
       radioButtons['Group4'] = 'antlerless';
     }
-  }
-
-  if (species === 'turkey') {
+  } else if (species === 'turkey') {
     if (sex === 'male') {
-      radioButtons['Group6'] = 'turkey_gobbler';
-      if (job?.beard_attached === true) {
-        radioButtons['Group7'] = 'turkey_beard_attached_yes';
-      } else {
-        radioButtons['Group7'] = 'turkey_beard_attached_no';
-      }
+      radioButtons['Group4'] = 'turkey_gobbler';
     } else {
-      radioButtons['Group6'] = 'turkey_hen';
+      radioButtons['Group4'] = 'turkey_hen';
     }
-  }
-
-  if (species === 'pronghorn') {
+    // Turkey beard is a separate selection but needs to be handled differently
+    // since it's in the same radio group - we'll prioritize the main species/sex selection
+  } else if (species === 'pronghorn') {
     if (sex === 'male') {
-      radioButtons['Group5'] = 'pronghorn_buck';
+      radioButtons['Group4'] = 'pronghorn_buck';
     } else {
-      radioButtons['Group5'] = 'pronghorn_doe';
+      radioButtons['Group4'] = 'pronghorn_doe';
     }
-  }
-
-  if (species === 'pheasant') {
+  } else if (species === 'pheasant') {
     if (sex === 'male') {
-      radioButtons['Group8'] = 'pheasant_cock';
+      radioButtons['Group4'] = 'pheasant_cock';
     } else {
-      radioButtons['Group8'] = 'pheasant_hen';
+      radioButtons['Group4'] = 'pheasant_hen';
     }
   }
 
