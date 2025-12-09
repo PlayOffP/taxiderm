@@ -44,6 +44,17 @@ export async function fillPSR(job: any, formData: FormFieldData) {
     });
   }
 
+  if (formData.radioButtons) {
+    Object.entries(formData.radioButtons).forEach(([groupName, value]) => {
+      try {
+        const field = form.getRadioGroup(groupName);
+        field.select(value);
+      } catch (e) {
+        console.warn(`Radio button group not found: ${groupName}`, e);
+      }
+    });
+  }
+
   const bytes = await pdf.save();
   const b64 = typeof window !== 'undefined' ? btoa(String.fromCharCode(...bytes)) : '';
   const dataUrl = b64 ? `data:application/pdf;base64,${b64}` : '';
