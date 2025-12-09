@@ -45,6 +45,57 @@ export function mapPSRFormFields(job: any): FormFieldData {
   return { textFields, checkboxes, radioButtons };
 }
 
+export function mapWRDFormFields(job: any): FormFieldData {
+  const textFields: Record<string, string> = {};
+  const checkboxes: Record<string, boolean> = {};
+  const radioButtons: Record<string, string> = {};
+
+  // Hunter/Customer Information
+  textFields['hunter_name'] = job?.customer?.name ?? '';
+  textFields['hunter_phone'] = job?.customer?.phone ?? '';
+  textFields['hunter_address'] = job?.customer?.address_line1 ?? '';
+  textFields['hunter_city'] = job?.customer?.city ?? '';
+  textFields['hunter_state'] = job?.customer?.state ?? 'TX';
+  textFields['hunter_zip'] = job?.customer?.zip ?? '';
+
+  // Kill date and location information
+  textFields['kill_date'] = job?.date_killed ?? '';
+  textFields['ranch_name'] = job?.ranch_area ?? '';
+
+  // Ranch address - combine county and state if available
+  const ranchAddress = [job?.county, job?.state]
+    .filter(Boolean)
+    .join(', ');
+  textFields['ranch_address'] = ranchAddress || '';
+
+  // License information
+  textFields['hunter_license'] = job?.license_no ?? '';
+  textFields['hunter_license_state'] = job?.state ?? 'TX';
+
+  // Processing type checkboxes
+  const processingType = (job?.processing_type ?? 'standard').toLowerCase();
+
+  // Map processing types to checkboxes
+  if (processingType === 'standard' || processingType === 'processing_only') {
+    checkboxes['BasicProcessing_checkbox'] = true;
+  }
+
+  // Check if quartered deer processing is selected in cut sheet
+  if (job?.cut_sheet?.quartered) {
+    checkboxes['QuarteredDeer_checkbox'] = true;
+  }
+
+  // Check for other/custom processing types
+  if (processingType === 'euro_mount' || processingType === 'shoulder_mount' || processingType === 'full_mount') {
+    checkboxes['Other_checkbox'] = true;
+  }
+
+  // Special instructions
+  textFields['instructions'] = job?.instructions ?? '';
+
+  return { textFields, checkboxes, radioButtons };
+}
+
 export function mapPSR(job: any): PsrField[] {
   const f: PsrField[] = [];
 
