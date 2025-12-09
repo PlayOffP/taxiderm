@@ -17,7 +17,7 @@ export function mapPSRFormFields(job: any): FormFieldData {
 
   // Group4: Deer (Antlered/Antlerless)
   if (species === 'deer') {
-    radioButtons['Group4'] = sex === 'male' ? 'Antlered' : 'Antlerless';
+    radioButtons['Group4'] = sex === 'male' ? 'antlered' : 'antlerless';
     if (sex === 'male') {
       textFields['deer_antlered_points'] = String(job?.antler_points ?? '');
     }
