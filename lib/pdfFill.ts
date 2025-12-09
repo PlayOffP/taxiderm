@@ -5,6 +5,7 @@ export type PdfField = { text: string; x: number; y: number; size?: number; page
 export type FormFieldData = {
   textFields?: Record<string, string>;
   checkboxes?: Record<string, boolean>;
+  radioButtons?: Record<string, string>;
 };
 
 export async function fillPdfFromUrl(templateUrl: string, fields: PdfField[]) {
@@ -62,6 +63,17 @@ export async function fillPdfFormFields(templateUrl: string, formData: FormField
         }
       } catch (e) {
         console.warn(`Checkbox not found: ${fieldName}`);
+      }
+    });
+  }
+
+  if (formData.radioButtons) {
+    Object.entries(formData.radioButtons).forEach(([groupName, value]) => {
+      try {
+        const field = form.getRadioGroup(groupName);
+        field.select(value);
+      } catch (e) {
+        console.warn(`Radio button group not found: ${groupName}`, e);
       }
     });
   }

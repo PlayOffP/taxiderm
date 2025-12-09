@@ -5,6 +5,7 @@ export type PsrField = { text: string; x: number; y: number; size?: number; page
 export function mapPSRFormFields(job: any): FormFieldData {
   const textFields: Record<string, string> = {};
   const checkboxes: Record<string, boolean> = {};
+  const radioButtons: Record<string, string> = {};
 
   textFields['hunter_name'] = job?.customer?.name ?? '';
   textFields['kill_date'] = job?.date_killed ?? '';
@@ -14,71 +15,34 @@ export function mapPSRFormFields(job: any): FormFieldData {
   const species = (job?.species ?? '').toLowerCase();
   const sex = (job?.sex ?? '').toLowerCase();
 
+  // Group4: Deer (antlered/antlerless)
   if (species === 'deer') {
+    radioButtons['Group4'] = sex === 'male' ? 'antlered' : 'antlerless';
     if (sex === 'male') {
-      checkboxes['antlered'] = true;
-      checkboxes['antlerless'] = false;
       textFields['deer_antlered_points'] = String(job?.antler_points ?? '');
-    } else {
-      checkboxes['antlered'] = false;
-      checkboxes['antlerless'] = true;
     }
-  } else {
-    checkboxes['antlered'] = false;
-    checkboxes['antlerless'] = false;
   }
 
-  if (species === 'turkey') {
-    if (sex === 'male') {
-      checkboxes['turkey_gobbler'] = true;
-      checkboxes['turkey_hen'] = false;
-      if (job?.beard_attached === true) {
-        checkboxes['turkey_beard_attached_yes'] = true;
-        checkboxes['turkey_beard_attached_no'] = false;
-      } else {
-        checkboxes['turkey_beard_attached_yes'] = false;
-        checkboxes['turkey_beard_attached_no'] = true;
-      }
-    } else {
-      checkboxes['turkey_gobbler'] = false;
-      checkboxes['turkey_hen'] = true;
-      checkboxes['turkey_beard_attached_yes'] = false;
-      checkboxes['turkey_beard_attached_no'] = false;
-    }
-  } else {
-    checkboxes['turkey_gobbler'] = false;
-    checkboxes['turkey_hen'] = false;
-    checkboxes['turkey_beard_attached_yes'] = false;
-    checkboxes['turkey_beard_attached_no'] = false;
-  }
-
+  // Group5: Pronghorn (buck/doe)
   if (species === 'pronghorn') {
-    if (sex === 'male') {
-      checkboxes['pronghorn_buck'] = true;
-      checkboxes['pronghorn_doe'] = false;
-    } else {
-      checkboxes['pronghorn_buck'] = false;
-      checkboxes['pronghorn_doe'] = true;
-    }
-  } else {
-    checkboxes['pronghorn_buck'] = false;
-    checkboxes['pronghorn_doe'] = false;
+    radioButtons['Group5'] = sex === 'male' ? 'buck' : 'doe';
   }
 
+  // Turkey: gobbler/hen (need group name)
+  if (species === 'turkey') {
+    radioButtons['Group6'] = sex === 'male' ? 'gobbler' : 'hen';
+    // Beard attached (if male)
+    if (sex === 'male') {
+      radioButtons['Group7'] = job?.beard_attached === true ? 'yes' : 'no';
+    }
+  }
+
+  // Pheasant: cock/hen (need group name)
   if (species === 'pheasant') {
-    if (sex === 'male') {
-      checkboxes['pheasant_cock'] = true;
-      checkboxes['pheasant_hen'] = false;
-    } else {
-      checkboxes['pheasant_cock'] = false;
-      checkboxes['pheasant_hen'] = true;
-    }
-  } else {
-    checkboxes['pheasant_cock'] = false;
-    checkboxes['pheasant_hen'] = false;
+    radioButtons['Group8'] = sex === 'male' ? 'cock' : 'hen';
   }
 
-  return { textFields, checkboxes };
+  return { textFields, checkboxes, radioButtons };
 }
 
 export function mapPSR(job: any): PsrField[] {
