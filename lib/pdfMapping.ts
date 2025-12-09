@@ -91,6 +91,47 @@ export function mapPSR(job: any): PdfField[] {
   return f;
 }
 
+export function mapWRDFormFields(job: any): FormFieldData {
+  const textFields: Record<string, string> = {};
+  const checkboxes: Record<string, boolean> = {};
+  const radioButtons: Record<string, string> = {};
+
+  // Donor (hunter) information
+  textFields['donor_name'] = job?.customer?.name ?? '';
+  textFields['donor_phone'] = job?.customer?.phone ?? '';
+  textFields['donor_address'] = job?.customer?.address_line1 ?? '';
+  textFields['donor_city'] = job?.customer?.city ?? '';
+  textFields['donor_state'] = job?.customer?.state ?? '';
+  textFields['donor_zip'] = job?.customer?.zip ?? '';
+
+  // Receiver (business) information
+  textFields['receiver_name'] = 'Tall Pine Taxidermy and Deer Processing';
+  textFields['receiver_address'] = '4982 TX-19 S, Sulphur Springs, TX 75482';
+
+  // Animal details
+  textFields['species'] = job?.species ?? '';
+  textFields['quantity'] = String(job?.quantity ?? 1);
+  textFields['license_number'] = job?.license_no ?? '';
+  textFields['kill_date'] = job?.date_killed ?? '';
+
+  // Processing information
+  textFields['processing_type'] = job?.processing_type ?? 'Basic';
+  textFields['instructions'] = job?.instructions ?? '';
+
+  // Weights
+  if (job?.hang_weight) {
+    textFields['hang_weight'] = String(job.hang_weight);
+  }
+  if (job?.yield_weight) {
+    textFields['yield_weight'] = String(job.yield_weight);
+  }
+
+  // Current date
+  textFields['date'] = new Date().toISOString().split('T')[0];
+
+  return { textFields, checkboxes, radioButtons };
+}
+
 export function mapWRD(job: any): PdfField[] {
   const f: PdfField[] = [];
 
