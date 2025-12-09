@@ -15,31 +15,31 @@ export function mapPSRFormFields(job: any): FormFieldData {
   const species = (job?.species ?? '').toLowerCase();
   const sex = (job?.sex ?? '').toLowerCase();
 
-  // Group4: Deer (antlered/antlerless)
+  // Group4: Deer (Antlered/Antlerless)
   if (species === 'deer') {
-    radioButtons['Group4'] = sex === 'male' ? 'antlered' : 'antlerless';
+    radioButtons['Group4'] = sex === 'male' ? 'Antlered' : 'Antlerless';
     if (sex === 'male') {
       textFields['deer_antlered_points'] = String(job?.antler_points ?? '');
     }
   }
 
-  // Group5: Pronghorn (buck/doe)
+  // Group5: Pronghorn (pronghorn_buck/pronghorn_doe)
   if (species === 'pronghorn') {
-    radioButtons['Group5'] = sex === 'male' ? 'buck' : 'doe';
+    radioButtons['Group5'] = sex === 'male' ? 'pronghorn_buck' : 'pronghorn_doe';
   }
 
-  // Turkey: gobbler/hen (need group name)
+  // Group6: Turkey (turkey_gobbler/turkey_hen)
   if (species === 'turkey') {
-    radioButtons['Group6'] = sex === 'male' ? 'gobbler' : 'hen';
-    // Beard attached (if male)
+    radioButtons['Group6'] = sex === 'male' ? 'turkey_gobbler' : 'turkey_hen';
+    // Group7: Beard attached (turkey_beard_attached_yes/turkey_beard_attached_no)
     if (sex === 'male') {
-      radioButtons['Group7'] = job?.beard_attached === true ? 'yes' : 'no';
+      radioButtons['Group7'] = job?.beard_attached === true ? 'turkey_beard_attached_yes' : 'turkey_beard_attached_no';
     }
   }
 
-  // Pheasant: cock/hen (need group name)
+  // Group8: Pheasant (pheasant_cock/pheasant_hen)
   if (species === 'pheasant') {
-    radioButtons['Group8'] = sex === 'male' ? 'cock' : 'hen';
+    radioButtons['Group8'] = sex === 'male' ? 'pheasant_cock' : 'pheasant_hen';
   }
 
   return { textFields, checkboxes, radioButtons };
