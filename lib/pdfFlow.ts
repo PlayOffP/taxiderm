@@ -9,45 +9,75 @@ function getPublicUrl(bucket: string, path: string): string {
 }
 
 export async function generatePSR(job: any) {
-  const tplUrl = getPublicUrl(BUCKET_TEMPLATES, TEMPLATE_PSR);
-  const formData = mapPSRFormFields(job);
-  const { bytes, dataUrl } = await fillPdfFormFields(tplUrl, formData);
+  try {
+    const tplUrl = getPublicUrl(BUCKET_TEMPLATES, TEMPLATE_PSR);
 
-  const path = `documents/${job.id}/PWD-535_v${job.version || 1}.pdf`;
-  const { error } = await supabase.storage.from(BUCKET_DOCUMENTS)
-    .upload(path, bytes, { contentType: 'application/pdf', upsert: true });
-  if (error) throw error;
+    // Check if template exists
+    const { data: templateCheck, error: checkError } = await supabase.storage
+      .from(BUCKET_TEMPLATES)
+      .list('', { search: TEMPLATE_PSR });
 
-  const publicUrl = getPublicUrl(BUCKET_DOCUMENTS, path);
+    if (checkError || !templateCheck || templateCheck.length === 0) {
+      throw new Error(`PSR template not found. Please upload ${TEMPLATE_PSR} to the Templates storage bucket.`);
+    }
 
-  await supabase.from('compliance_doc').insert({
-    job_id: job.id,
-    type: 'PWD-535',
-    pdf_url: publicUrl,
-    version: job.version || 1
-  });
+    const formData = mapPSRFormFields(job);
+    const { bytes, dataUrl } = await fillPdfFormFields(tplUrl, formData);
 
-  return { publicUrl, dataUrl };
+    const path = `documents/${job.id}/PWD-535_v${job.version || 1}.pdf`;
+    const { error } = await supabase.storage.from(BUCKET_DOCUMENTS)
+      .upload(path, bytes, { contentType: 'application/pdf', upsert: true });
+    if (error) throw error;
+
+    const publicUrl = getPublicUrl(BUCKET_DOCUMENTS, path);
+
+    await supabase.from('compliance_doc').update({
+      pdf_url: publicUrl,
+      version: job.version || 1
+    })
+    .eq('job_id', job.id)
+    .eq('type', 'PWD-535');
+
+    return { publicUrl, dataUrl };
+  } catch (error: any) {
+    console.error('Error generating PSR:', error);
+    throw new Error(error?.message || 'Failed to generate PWD-535 document');
+  }
 }
 
 export async function generateWRD(job: any) {
-  const tplUrl = getPublicUrl(BUCKET_TEMPLATES, TEMPLATE_WRD);
-  const formData = mapWRDFormFields(job);
-  const { bytes, dataUrl } = await fillPdfFormFields(tplUrl, formData);
+  try {
+    const tplUrl = getPublicUrl(BUCKET_TEMPLATES, TEMPLATE_WRD);
 
-  const path = `documents/${job.id}/WRD_v${job.version || 1}.pdf`;
-  const { error } = await supabase.storage.from(BUCKET_DOCUMENTS)
-    .upload(path, bytes, { contentType: 'application/pdf', upsert: true });
-  if (error) throw error;
+    // Check if template exists
+    const { data: templateCheck, error: checkError } = await supabase.storage
+      .from(BUCKET_TEMPLATES)
+      .list('', { search: TEMPLATE_WRD });
 
-  const publicUrl = getPublicUrl(BUCKET_DOCUMENTS, path);
+    if (checkError || !templateCheck || templateCheck.length === 0) {
+      throw new Error(`WRD template not found. Please upload ${TEMPLATE_WRD} to the Templates storage bucket.`);
+    }
 
-  await supabase.from('compliance_doc').insert({
-    job_id: job.id,
-    type: 'WRD',
-    pdf_url: publicUrl,
-    version: job.version || 1
-  });
+    const formData = mapWRDFormFields(job);
+    const { bytes, dataUrl } = await fillPdfFormFields(tplUrl, formData);
 
-  return { publicUrl, dataUrl };
+    const path = `documents/${job.id}/WRD_v${job.version || 1}.pdf`;
+    const { error } = await supabase.storage.from(BUCKET_DOCUMENTS)
+      .upload(path, bytes, { contentType: 'application/pdf', upsert: true });
+    if (error) throw error;
+
+    const publicUrl = getPublicUrl(BUCKET_DOCUMENTS, path);
+
+    await supabase.from('compliance_doc').update({
+      pdf_url: publicUrl,
+      version: job.version || 1
+    })
+    .eq('job_id', job.id)
+    .eq('type', 'WRD');
+
+    return { publicUrl, dataUrl };
+  } catch (error: any) {
+    console.error('Error generating WRD:', error);
+    throw new Error(error?.message || 'Failed to generate WRD document');
+  }
 }
