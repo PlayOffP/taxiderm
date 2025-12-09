@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { generatePSR, generateWRD } from '../../lib/pdfFlow';
+import { PDFDocument } from 'pdf-lib';
+import { supabase } from '../../lib/supabase';
+import { BUCKET_TEMPLATES, TEMPLATE_PSR } from '../../constants/storage';
 
 const fakeJob = {
   id: 'test-job-123',
@@ -23,6 +26,46 @@ const fakeJob = {
 export default function Diagnostics() {
   const [psrUrl, setPsrUrl] = useState<string>('');
   const [wrdUrl, setWrdUrl] = useState<string>('');
+  const [formFields, setFormFields] = useState<string>('');
+
+  const inspectPDFFields = async () => {
+    try {
+      const { data } = supabase.storage.from(BUCKET_TEMPLATES).getPublicUrl(TEMPLATE_PSR);
+      const templateUrl = data?.publicUrl || '';
+
+      const resp = await fetch(templateUrl);
+      const bytes = new Uint8Array(await resp.arrayBuffer());
+      const pdf = await PDFDocument.load(bytes);
+      const form = pdf.getForm();
+
+      const fields = form.getFields();
+      let output = `Total fields: ${fields.length}\n\n`;
+
+      fields.forEach((field) => {
+        const name = field.getName();
+        const type = field.constructor.name;
+        output += `Field: ${name}\n`;
+        output += `Type: ${type}\n`;
+
+        if (type === 'PDFRadioGroup') {
+          try {
+            const radioGroup = form.getRadioGroup(name);
+            const options = radioGroup.getOptions();
+            output += `Options: ${options.join(', ')}\n`;
+          } catch (e) {
+            output += `Error getting options\n`;
+          }
+        }
+        output += '\n';
+      });
+
+      console.log(output);
+      setFormFields(output);
+    } catch (e) {
+      console.error('Inspect error', e);
+      setFormFields('Error: ' + String(e));
+    }
+  };
 
   const runPSR = async () => {
     try {
@@ -45,6 +88,16 @@ export default function Diagnostics() {
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Text style={{ fontSize: 18, fontWeight: '600' }}>Diagnostics</Text>
+
+      <TouchableOpacity onPress={inspectPDFFields} style={{ padding: 12, backgroundColor: '#059669', borderRadius: 8 }}>
+        <Text style={{ color: 'white' }}>Inspect PDF Form Fields</Text>
+      </TouchableOpacity>
+
+      {formFields ? (
+        <View style={{ backgroundColor: '#f5f5f5', padding: 12, borderRadius: 8 }}>
+          <Text selectable style={{ fontSize: 11, fontFamily: 'monospace' }}>{formFields}</Text>
+        </View>
+      ) : null}
 
       <TouchableOpacity onPress={runPSR} style={{ padding: 12, backgroundColor: '#111', borderRadius: 8 }}>
         <Text style={{ color: 'white' }}>Generate PSR (PWD-535) Test PDF</Text>

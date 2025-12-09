@@ -45,10 +45,15 @@ export async function fillPSR(job: any, formData: FormFieldData) {
   }
 
   if (formData.radioButtons) {
+    console.log('Setting radio buttons:', formData.radioButtons);
     Object.entries(formData.radioButtons).forEach(([groupName, value]) => {
       try {
         const field = form.getRadioGroup(groupName);
+        const options = field.getOptions();
+        console.log(`Radio group "${groupName}" has options:`, options);
+        console.log(`Attempting to select: "${value}"`);
         field.select(value);
+        console.log(`Successfully selected "${value}" in group "${groupName}"`);
       } catch (e) {
         console.warn(`Radio button group not found: ${groupName}`, e);
       }

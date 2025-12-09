@@ -9,6 +9,7 @@ import type { PdfField, FormFieldData } from './pdfFill';
 export function mapPSRFormFields(job: any): FormFieldData {
   const textFields: Record<string, string> = {};
   const checkboxes: Record<string, boolean> = {};
+  const radioButtons: Record<string, string> = {};
 
   textFields['hunter_name'] = job?.customer?.name ?? '';
   textFields['kill_date'] = job?.date_killed ?? '';
@@ -20,69 +21,43 @@ export function mapPSRFormFields(job: any): FormFieldData {
 
   if (species === 'deer') {
     if (sex === 'male') {
-      checkboxes['antlered'] = true;
-      checkboxes['antlerless'] = false;
+      radioButtons['Group4'] = 'antlered';
       textFields['deer_antlered_points'] = String(job?.antler_points ?? '');
     } else {
-      checkboxes['antlered'] = false;
-      checkboxes['antlerless'] = true;
+      radioButtons['Group4'] = 'antlerless';
     }
-  } else {
-    checkboxes['antlered'] = false;
-    checkboxes['antlerless'] = false;
   }
 
   if (species === 'turkey') {
     if (sex === 'male') {
-      checkboxes['turkey_gobbler'] = true;
-      checkboxes['turkey_hen'] = false;
+      radioButtons['Group6'] = 'turkey_gobbler';
       if (job?.beard_attached === true) {
-        checkboxes['turkey_beard_attached_yes'] = true;
-        checkboxes['turkey_beard_attached_no'] = false;
+        radioButtons['Group7'] = 'turkey_beard_attached_yes';
       } else {
-        checkboxes['turkey_beard_attached_yes'] = false;
-        checkboxes['turkey_beard_attached_no'] = true;
+        radioButtons['Group7'] = 'turkey_beard_attached_no';
       }
     } else {
-      checkboxes['turkey_gobbler'] = false;
-      checkboxes['turkey_hen'] = true;
-      checkboxes['turkey_beard_attached_yes'] = false;
-      checkboxes['turkey_beard_attached_no'] = false;
+      radioButtons['Group6'] = 'turkey_hen';
     }
-  } else {
-    checkboxes['turkey_gobbler'] = false;
-    checkboxes['turkey_hen'] = false;
-    checkboxes['turkey_beard_attached_yes'] = false;
-    checkboxes['turkey_beard_attached_no'] = false;
   }
 
   if (species === 'pronghorn') {
     if (sex === 'male') {
-      checkboxes['pronghorn_buck'] = true;
-      checkboxes['pronghorn_doe'] = false;
+      radioButtons['Group5'] = 'pronghorn_buck';
     } else {
-      checkboxes['pronghorn_buck'] = false;
-      checkboxes['pronghorn_doe'] = true;
+      radioButtons['Group5'] = 'pronghorn_doe';
     }
-  } else {
-    checkboxes['pronghorn_buck'] = false;
-    checkboxes['pronghorn_doe'] = false;
   }
 
   if (species === 'pheasant') {
     if (sex === 'male') {
-      checkboxes['pheasant_cock'] = true;
-      checkboxes['pheasant_hen'] = false;
+      radioButtons['Group8'] = 'pheasant_cock';
     } else {
-      checkboxes['pheasant_cock'] = false;
-      checkboxes['pheasant_hen'] = true;
+      radioButtons['Group8'] = 'pheasant_hen';
     }
-  } else {
-    checkboxes['pheasant_cock'] = false;
-    checkboxes['pheasant_hen'] = false;
   }
 
-  return { textFields, checkboxes };
+  return { textFields, checkboxes, radioButtons };
 }
 
 export function mapPSR(job: any): PdfField[] {
