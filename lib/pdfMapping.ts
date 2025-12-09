@@ -96,38 +96,38 @@ export function mapWRDFormFields(job: any): FormFieldData {
   const checkboxes: Record<string, boolean> = {};
   const radioButtons: Record<string, string> = {};
 
-  // Donor (hunter) information
-  textFields['donor_name'] = job?.customer?.name ?? '';
-  textFields['donor_phone'] = job?.customer?.phone ?? '';
-  textFields['donor_address'] = job?.customer?.address_line1 ?? '';
-  textFields['donor_city'] = job?.customer?.city ?? '';
-  textFields['donor_state'] = job?.customer?.state ?? '';
-  textFields['donor_zip'] = job?.customer?.zip ?? '';
+  // Hunter (donor) information
+  textFields['hunter_name'] = job?.customer?.name ?? '';
+  textFields['hunter_phone'] = job?.customer?.phone ?? '';
+  textFields['hunter_address'] = job?.customer?.address_line1 ?? '';
+  textFields['hunter_city'] = job?.customer?.city ?? '';
+  textFields['hunter_state'] = job?.customer?.state ?? '';
+  textFields['hunter_zip'] = job?.customer?.zip ?? '';
 
-  // Receiver (business) information
-  textFields['receiver_name'] = 'Tall Pine Taxidermy and Deer Processing';
-  textFields['receiver_address'] = '4982 TX-19 S, Sulphur Springs, TX 75482';
+  // Ranch/location information
+  textFields['ranch_name'] = 'Tall Pine Taxidermy and Deer Processing';
+  textFields['ranch_address'] = '4982 TX-19 S, Sulphur Springs, TX 75482';
 
-  // Animal details
-  textFields['species'] = job?.species ?? '';
-  textFields['quantity'] = String(job?.quantity ?? 1);
-  textFields['license_number'] = job?.license_no ?? '';
+  // License information
+  textFields['hunter_license'] = job?.license_no ?? '';
+  textFields['hunter_license_state'] = 'TX';
+
+  // Kill date
   textFields['kill_date'] = job?.date_killed ?? '';
 
-  // Processing information
-  textFields['processing_type'] = job?.processing_type ?? 'Basic';
-  textFields['instructions'] = job?.instructions ?? '';
-
   // Weights
-  if (job?.hang_weight) {
-    textFields['hang_weight'] = String(job.hang_weight);
-  }
-  if (job?.yield_weight) {
-    textFields['yield_weight'] = String(job.yield_weight);
-  }
+  textFields['lb Dressed'] = job?.dressed_weight ? String(job.dressed_weight) : '';
+  textFields['lb Hang'] = job?.hang_weight ? String(job.hang_weight) : '';
+  textFields['lb Yield'] = job?.yield_weight ? String(job.yield_weight) : '';
 
-  // Current date
-  textFields['date'] = new Date().toISOString().split('T')[0];
+  // Processing type checkboxes
+  const processingType = (job?.processing_type ?? 'Basic').toLowerCase();
+  checkboxes['BasicProcessing_checkbox'] = processingType.includes('basic');
+  checkboxes['QuarteredDeer_checkbox'] = processingType.includes('quarter');
+  checkboxes['Other_checkbox'] = !processingType.includes('basic') && !processingType.includes('quarter');
+
+  // Instructions
+  textFields['instructions'] = job?.instructions ?? '';
 
   return { textFields, checkboxes, radioButtons };
 }
