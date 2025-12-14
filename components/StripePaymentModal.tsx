@@ -209,16 +209,7 @@ export default function StripePaymentModal({
             <div class="amount-value">$${amount.toFixed(2)}</div>
           </div>
           <div id="card-element"></div>
-          <div style="margin-top: 16px;">
-            <input
-              id="postal-code"
-              type="text"
-              placeholder="Postal Code"
-              required
-              style="width: 100%; padding: 12px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 16px; background: white;"
-            />
-          </div>
-          <button id="submit-button" type="submit" style="margin-top: 16px;">
+          <button id="submit-button" type="submit">
             <span id="button-text">Pay Now</span>
             <span id="spinner" style="display: none;">Processing...</span>
           </button>
@@ -230,6 +221,7 @@ export default function StripePaymentModal({
           const elements = stripe.elements();
 
           const cardElement = elements.create('card', {
+            hidePostalCode: false,
             style: {
               base: {
                 fontSize: '16px',
@@ -257,18 +249,11 @@ export default function StripePaymentModal({
             spinner.style.display = 'inline';
             errorMessage.textContent = '';
 
-            const postalCode = document.getElementById('postal-code').value;
-
             const { error, paymentIntent } = await stripe.confirmCardPayment(
               '${clientSecret}',
               {
                 payment_method: {
                   card: cardElement,
-                  billing_details: {
-                    address: {
-                      postal_code: postalCode,
-                    },
-                  },
                 },
               }
             );
