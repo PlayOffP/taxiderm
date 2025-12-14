@@ -6,11 +6,12 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  TextInput,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { JobRow, CustomerRow } from '@/types/database';
-import { ArrowLeft, FileText, Calendar, Package, DollarSign, Activity, CheckCircle2, Circle, AlertCircle } from 'lucide-react-native';
+import { JobRow, CustomerRow, PaymentRow } from '@/types/database';
+import { ArrowLeft, FileText, Calendar, Package, DollarSign, Activity, CheckCircle2, Circle, AlertCircle, CreditCard, Banknote } from 'lucide-react-native';
 import { PROCESSING_WORKFLOW, TAXIDERMY_WORKFLOW, formatStatus as formatWorkflowStatus, getWorkflowProgress } from '@/lib/workflow';
 
 type JobWithCustomer = JobRow & {
@@ -22,9 +23,15 @@ export default function JobDetailScreen() {
   const [job, setJob] = useState<JobWithCustomer | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'check' | 'card'>('card');
+  const [paymentType, setPaymentType] = useState<'deposit' | 'final'>('deposit');
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   useEffect(() => {
     loadJob();
+    loadPayments();
   }, [id]);
 
   const loadJob = async () => {
@@ -47,6 +54,21 @@ export default function JobDetailScreen() {
       router.back();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPayments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payment')
+        .select('*')
+        .eq('job_id', id)
+        .order('paid_at', { ascending: false });
+
+      if (error) throw error;
+      setPayments(data || []);
+    } catch (error) {
+      console.error('Error loading payments:', error);
     }
   };
 
@@ -93,12 +115,86 @@ export default function JobDetailScreen() {
     }
   };
 
+  const processPayment = async () => {
+    if (!job || !paymentAmount || isNaN(parseFloat(paymentAmount))) {
+      Alert.alert('Error', 'Please enter a valid payment amount');
+      return;
+    }
+
+    const amount = parseFloat(paymentAmount);
+    if (amount <= 0) {
+      Alert.alert('Error', 'Payment amount must be greater than 0');
+      return;
+    }
+
+    setProcessingPayment(true);
+
+    try {
+      if (paymentMethod === 'card') {
+        Alert.alert(
+          'Card Payment',
+          'Stripe card payment UI will be implemented here. For now, use cash or check payment methods.'
+        );
+        setProcessingPayment(false);
+        return;
+      }
+
+      const { data: payment, error } = await supabase
+        .from('payment')
+        .insert({
+          job_id: job.id,
+          method: paymentMethod,
+          total: amount,
+          payment_type: paymentType,
+          paid_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (paymentType === 'deposit') {
+        await supabase
+          .from('job')
+          .update({
+            deposit_paid: true,
+            deposit_amount: amount,
+          })
+          .eq('id', job.id);
+      } else if (paymentType === 'final') {
+        await supabase
+          .from('job')
+          .update({
+            status: 'paid',
+          })
+          .eq('id', job.id);
+      }
+
+      await loadJob();
+      await loadPayments();
+      setPaymentAmount('');
+      Alert.alert('Success', 'Payment recorded successfully');
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      Alert.alert('Error', 'Failed to process payment');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
   };
 
   if (loading) {
@@ -410,8 +506,154 @@ export default function JobDetailScreen() {
           </View>
         )}
 
-        {/* Other tabs would be implemented similarly */}
-        {activeTab !== 'overview' && activeTab !== 'compliance' && (
+        {activeTab === 'payments' && (
+          <View style={styles.tabContent}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Payment Summary</Text>
+              <View style={styles.paymentSummaryCard}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Total Paid:</Text>
+                  <Text style={styles.summaryValue}>
+                    {formatCurrency(payments.reduce((sum, p) => sum + p.total, 0))}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Deposit Status:</Text>
+                  <Text style={[styles.summaryValue, { color: job.deposit_paid ? '#10B981' : '#EF4444' }]}>
+                    {job.deposit_paid ? `Paid ($${job.deposit_amount})` : 'Not Paid'}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Final Payment:</Text>
+                  <Text style={[styles.summaryValue, { color: job.status === 'paid' ? '#10B981' : '#6B7280' }]}>
+                    {job.status === 'paid' ? 'Complete' : 'Pending'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Record Payment</Text>
+              <View style={styles.paymentFormCard}>
+                <Text style={styles.formLabel}>Payment Type</Text>
+                <View style={styles.radioGroup}>
+                  <TouchableOpacity
+                    style={[styles.radioButton, paymentType === 'deposit' && styles.radioButtonActive]}
+                    onPress={() => setPaymentType('deposit')}
+                  >
+                    <View style={[styles.radio, paymentType === 'deposit' && styles.radioActive]}>
+                      {paymentType === 'deposit' && <View style={styles.radioInner} />}
+                    </View>
+                    <Text style={[styles.radioLabel, paymentType === 'deposit' && styles.radioLabelActive]}>
+                      Deposit
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.radioButton, paymentType === 'final' && styles.radioButtonActive]}
+                    onPress={() => setPaymentType('final')}
+                  >
+                    <View style={[styles.radio, paymentType === 'final' && styles.radioActive]}>
+                      {paymentType === 'final' && <View style={styles.radioInner} />}
+                    </View>
+                    <Text style={[styles.radioLabel, paymentType === 'final' && styles.radioLabelActive]}>
+                      Final Payment
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.formLabel}>Payment Method</Text>
+                <View style={styles.methodGroup}>
+                  <TouchableOpacity
+                    style={[styles.methodButton, paymentMethod === 'cash' && styles.methodButtonActive]}
+                    onPress={() => setPaymentMethod('cash')}
+                  >
+                    <Banknote size={20} color={paymentMethod === 'cash' ? '#059669' : '#6B7280'} />
+                    <Text style={[styles.methodText, paymentMethod === 'cash' && styles.methodTextActive]}>
+                      Cash
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.methodButton, paymentMethod === 'check' && styles.methodButtonActive]}
+                    onPress={() => setPaymentMethod('check')}
+                  >
+                    <FileText size={20} color={paymentMethod === 'check' ? '#059669' : '#6B7280'} />
+                    <Text style={[styles.methodText, paymentMethod === 'check' && styles.methodTextActive]}>
+                      Check
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.methodButton, paymentMethod === 'card' && styles.methodButtonActive]}
+                    onPress={() => setPaymentMethod('card')}
+                  >
+                    <CreditCard size={20} color={paymentMethod === 'card' ? '#059669' : '#6B7280'} />
+                    <Text style={[styles.methodText, paymentMethod === 'card' && styles.methodTextActive]}>
+                      Card
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.formLabel}>Amount</Text>
+                <TextInput
+                  style={styles.amountInput}
+                  value={paymentAmount}
+                  onChangeText={setPaymentAmount}
+                  placeholder="0.00"
+                  keyboardType="decimal-pad"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                <TouchableOpacity
+                  style={[styles.processButton, processingPayment && styles.processButtonDisabled]}
+                  onPress={processPayment}
+                  disabled={processingPayment}
+                >
+                  <Text style={styles.processButtonText}>
+                    {processingPayment ? 'Processing...' : 'Record Payment'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Payment History</Text>
+              {payments.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <DollarSign size={48} color="#D1D5DB" />
+                  <Text style={styles.emptyStateText}>No payments recorded yet</Text>
+                </View>
+              ) : (
+                payments.map((payment) => (
+                  <View key={payment.id} style={styles.paymentCard}>
+                    <View style={styles.paymentHeader}>
+                      <View style={styles.paymentInfo}>
+                        <Text style={styles.paymentAmount}>{formatCurrency(payment.total)}</Text>
+                        <Text style={styles.paymentType}>
+                          {payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)}
+                        </Text>
+                      </View>
+                      <View style={[styles.paymentMethodBadge, { backgroundColor: payment.method === 'card' ? '#EFF6FF' : payment.method === 'cash' ? '#F0FDF4' : '#FEF3C7' }]}>
+                        <Text style={[styles.paymentMethodText, { color: payment.method === 'card' ? '#3B82F6' : payment.method === 'cash' ? '#10B981' : '#F59E0B' }]}>
+                          {payment.method.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.paymentDetails}>
+                      <Text style={styles.paymentDate}>{formatDate(payment.paid_at)}</Text>
+                      {payment.card_last4 && (
+                        <Text style={styles.paymentCardInfo}>
+                          {payment.card_brand} •••• {payment.card_last4}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Other tabs */}
+        {activeTab !== 'overview' && activeTab !== 'compliance' && activeTab !== 'payments' && (
           <View style={styles.tabContent}>
             <View style={styles.comingSoonContainer}>
               <Text style={styles.comingSoonText}>
@@ -689,5 +931,202 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
+  },
+  paymentSummaryCard: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+  },
+  paymentFormCard: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  formLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  radioGroup: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  radioButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 8,
+  },
+  radioButtonActive: {
+    borderColor: '#059669',
+    backgroundColor: '#F0FDF4',
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioActive: {
+    borderColor: '#059669',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#059669',
+  },
+  radioLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  radioLabelActive: {
+    color: '#059669',
+  },
+  methodGroup: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  methodButton: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 6,
+  },
+  methodButtonActive: {
+    borderColor: '#059669',
+    backgroundColor: '#F0FDF4',
+  },
+  methodText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  methodTextActive: {
+    color: '#059669',
+  },
+  amountInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#111827',
+  },
+  processButton: {
+    backgroundColor: '#059669',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  processButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  processButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: 'white',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    marginTop: 12,
+  },
+  paymentCard: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+  },
+  paymentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  paymentInfo: {
+    flex: 1,
+  },
+  paymentAmount: {
+    fontSize: 20,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  paymentType: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  paymentMethodBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  paymentMethodText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+  },
+  paymentDetails: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  paymentDate: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+  },
+  paymentCardInfo: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+    marginTop: 4,
   },
 });

@@ -185,6 +185,12 @@ export type Database = {
           payment_type: 'deposit' | 'final' | 'refund';
           paid_at: string;
           receipt_url: string | null;
+          stripe_payment_intent_id: string | null;
+          stripe_charge_id: string | null;
+          stripe_customer_id: string | null;
+          card_last4: string | null;
+          card_brand: string | null;
+          processing_fee: number;
         };
         Insert: {
           id?: string;
@@ -198,6 +204,12 @@ export type Database = {
           payment_type?: 'deposit' | 'final' | 'refund';
           paid_at?: string;
           receipt_url?: string | null;
+          stripe_payment_intent_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_customer_id?: string | null;
+          card_last4?: string | null;
+          card_brand?: string | null;
+          processing_fee?: number;
         };
         Update: {
           id?: string;
@@ -211,6 +223,12 @@ export type Database = {
           payment_type?: 'deposit' | 'final' | 'refund';
           paid_at?: string;
           receipt_url?: string | null;
+          stripe_payment_intent_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_customer_id?: string | null;
+          card_last4?: string | null;
+          card_brand?: string | null;
+          processing_fee?: number;
         };
       };
       notification: {
