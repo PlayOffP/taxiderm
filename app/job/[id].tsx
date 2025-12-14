@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { JobRow, CustomerRow, PaymentRow } from '@/types/database';
 import { ArrowLeft, FileText, Calendar, Package, DollarSign, Activity, CheckCircle2, Circle, AlertCircle, CreditCard, Banknote } from 'lucide-react-native';
 import { PROCESSING_WORKFLOW, TAXIDERMY_WORKFLOW, formatStatus as formatWorkflowStatus, getWorkflowProgress } from '@/lib/workflow';
+import StripePaymentModal from '@/components/StripePaymentModal';
 
 type JobWithCustomer = JobRow & {
   customer: CustomerRow;
@@ -28,6 +29,7 @@ export default function JobDetailScreen() {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'check' | 'card'>('card');
   const [paymentType, setPaymentType] = useState<'deposit' | 'final'>('deposit');
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [showStripeModal, setShowStripeModal] = useState(false);
 
   useEffect(() => {
     loadJob();
@@ -131,10 +133,7 @@ export default function JobDetailScreen() {
 
     try {
       if (paymentMethod === 'card') {
-        Alert.alert(
-          'Card Payment',
-          'Stripe card payment UI will be implemented here. For now, use cash or check payment methods.'
-        );
+        setShowStripeModal(true);
         setProcessingPayment(false);
         return;
       }
@@ -180,6 +179,13 @@ export default function JobDetailScreen() {
     } finally {
       setProcessingPayment(false);
     }
+  };
+
+  const handleStripePaymentSuccess = async (paymentIntentId: string) => {
+    await loadJob();
+    await loadPayments();
+    setPaymentAmount('');
+    Alert.alert('Success', 'Payment processed successfully');
   };
 
   const formatDate = (dateString: string) => {
@@ -663,6 +669,17 @@ export default function JobDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {job && (
+        <StripePaymentModal
+          visible={showStripeModal}
+          onClose={() => setShowStripeModal(false)}
+          onSuccess={handleStripePaymentSuccess}
+          jobId={job.id}
+          amount={parseFloat(paymentAmount) || 0}
+          paymentType={paymentType}
+        />
+      )}
     </View>
   );
 }
