@@ -20,6 +20,10 @@ interface StripePaymentModalProps {
   paymentType: 'deposit' | 'final';
 }
 
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const STRIPE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+
 export default function StripePaymentModal({
   visible,
   onClose,
@@ -37,12 +41,18 @@ export default function StripePaymentModal({
       setLoading(true);
       setError(null);
 
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error('Supabase configuration is missing');
+      }
+
+      console.log('Creating payment intent...', { jobId, amount, paymentType });
+
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-payment/create-payment-intent`,
+        `${SUPABASE_URL}/functions/v1/stripe-payment/create-payment-intent`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -54,6 +64,7 @@ export default function StripePaymentModal({
       );
 
       const data = await response.json();
+      console.log('Payment intent response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create payment intent');
@@ -78,14 +89,15 @@ export default function StripePaymentModal({
   const handleMessage = async (event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
+      console.log('Received message from WebView:', message);
 
       if (message.type === 'payment_success') {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-payment/confirm-payment`,
+          `${SUPABASE_URL}/functions/v1/stripe-payment/confirm-payment`,
           {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -205,18 +217,19 @@ export default function StripePaymentModal({
         </form>
 
         <script>
-          const stripe = Stripe('${process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY}');
-          const elements = stripe.elements({
-            clientSecret: '${clientSecret}',
-          });
+          const stripe = Stripe('${STRIPE_PUBLISHABLE_KEY}');
+          const elements = stripe.elements();
 
-          const cardElement = elements.create('payment', {
-            layout: {
-              type: 'accordion',
-              defaultCollapsed: false,
-              radios: false,
-              spacedAccordionItems: true
-            }
+          const cardElement = elements.create('card', {
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#111827',
+                '::placeholder': {
+                  color: '#9CA3AF',
+                },
+              },
+            },
           });
 
           cardElement.mount('#card-element');
@@ -235,13 +248,14 @@ export default function StripePaymentModal({
             spinner.style.display = 'inline';
             errorMessage.textContent = '';
 
-            const { error, paymentIntent } = await stripe.confirmPayment({
-              elements,
-              confirmParams: {
-                return_url: window.location.href,
-              },
-              redirect: 'if_required',
-            });
+            const { error, paymentIntent } = await stripe.confirmCardPayment(
+              '${clientSecret}',
+              {
+                payment_method: {
+                  card: cardElement,
+                },
+              }
+            );
 
             if (error) {
               errorMessage.textContent = error.message;
