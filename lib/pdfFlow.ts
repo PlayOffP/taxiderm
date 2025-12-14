@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { BUCKET_TEMPLATES, BUCKET_DOCUMENTS, TEMPLATE_PSR, TEMPLATE_WRD } from '../constants/storage';
 import { fillPdfFromUrl, fillPdfFormFields } from './pdfFill';
-import { mapPSR, mapWRD, mapPSRFormFields, mapWRDFormFields } from './pdfMapping';
+import { mapPSR, mapWRD, mapPSRFormFields, mapWRDFormFields } from './psrMapping';
 
 function getPublicUrl(bucket: string, path: string): string {
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
