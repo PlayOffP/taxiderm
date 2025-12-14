@@ -641,7 +641,7 @@ export default function JobDetailScreen() {
                       <Text style={styles.paymentDate}>{formatDate(payment.paid_at)}</Text>
                       {payment.card_last4 && (
                         <Text style={styles.paymentCardInfo}>
-                          {payment.card_brand} •••• {payment.card_last4}
+                          {`${payment.card_brand} •••• ${payment.card_last4}`}
                         </Text>
                       )}
                     </View>
